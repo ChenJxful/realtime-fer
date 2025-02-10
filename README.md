@@ -1,6 +1,6 @@
-# Real Time Face Expression Recognition (5 types)
+# Real Time Facial Expression Recognition (5 types)
 
-This project implements real-time face expression recognition, capable of identifying five different types of expressions. It captures facial images using a camera and analyzes expressions using a deep learning model.
+This project implements real-time facial expression recognition, capable of identifying five different types of expressions. It captures facial images using a camera and analyzes expressions using a deep learning model.
 
 ## Demo
 
