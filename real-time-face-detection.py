@@ -6,28 +6,28 @@ from datetime import datetime
 from PIL import Image
 import time
 
-# 创建保存人脸图像的文件夹
+# Create a directory to save detected face images
 save_dir = 'detected-faces'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
-# 初始化mediapipe人脸检测
+# Initialize mediapipe face detection
 mp_face_detection = mp.solutions.face_detection
 mp_draw = mp.solutions.drawing_utils
 
-# 初始化ONNX表情识别器
+# Initialize ONNX emotion predictor
 from onnx_inference import ONNXEmotionPredictor
 emotion_predictor = ONNXEmotionPredictor("./emotion_model.onnx")
 
-# 打开摄像头
+# Open the camera
 cap = cv2.VideoCapture(0)
 
-# 使用上下文管理器创建人脸检测器
+# Create face detector using context manager
 with mp_face_detection.FaceDetection(
     model_selection=0,
     min_detection_confidence=0.7) as face_detection:
 
-    # 初始化帧计数器和当前表情
+    # Initialize frame counter and current emotion
     frame_counter = 0
     current_emotion = "Unknown"
     fps = 0
@@ -38,103 +38,103 @@ with mp_face_detection.FaceDetection(
         if not success:
             break
         
-        # 计算当前时间和上一帧时间的差值
+        # Calculate time difference between current and previous frame
         current_time = time.time()
         elapsed_time = current_time - prev_time
         prev_time = current_time
         
-        # 计算FPS
+        # Calculate FPS
         if elapsed_time > 0:
             fps = 1 / elapsed_time
         
-        # 水平翻转图像
+        # Flip the image horizontally
         img = cv2.flip(img, 1)
         
-        # 将BGR图像转换为RGB图像
+        # Convert BGR image to RGB
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         
-        # 确保图像是连续的内存块
+        # Ensure the image is a contiguous block of memory
         img_rgb = np.ascontiguousarray(img_rgb)
         
-        # 进行人脸检测
+        # Perform face detection
         results = face_detection.process(img_rgb)
         
-        # 创建显示用的图像副本
+        # Create a copy of the image for display
         display_img = img.copy()
         
-        # 如果检测到人脸
+        # If faces are detected
         if results.detections:
             for i, detection in enumerate(results.detections):
-                # 获取边界框坐标
+                # Get bounding box coordinates
                 bboxC = detection.location_data.relative_bounding_box
                 ih, iw, ic = img.shape
                 bbox = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
                        int(bboxC.width * iw), int(bboxC.height * ih)
                 
-                # 在显示图像上绘制绿色矩形框
+                # Draw a green rectangle on the display image
                 cv2.rectangle(display_img, bbox, (0, 255, 0), 2)
                 
-                # 每3帧进行一次表情识别
+                # Perform emotion recognition every 3 frames
                 if frame_counter % 3 == 0:
-                    # 从原始图像提取人脸区域
+                    # Extract face region from the original image
                     x, y, w, h = bbox
                     face_img = img[y:y+h, x:x+w]
                     face_pil = Image.fromarray(cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB))
                     
-                    # 进行表情识别
+                    # Perform emotion recognition
                     emotion, confidence = emotion_predictor.predict(face_pil)
                     current_emotion = f'{emotion} ({confidence:.2f})'
         
-        # 在左上角显示当前表情
+        # Display current emotion in the top-left corner
         cv2.putText(display_img, f'Emotion: {current_emotion}', (10, 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
         
-        # 显示提示信息
+        # Display prompt message
         cv2.putText(display_img, "Press 's' to save faces", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-        # 显示FPS在右上角
+        # Display FPS in the top-right corner
         text_size = cv2.getTextSize(f'FPS: {fps:.2f}', cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)[0]
         text_x = display_img.shape[1] - text_size[0] - 10
         cv2.putText(display_img, f'FPS: {fps:.2f}', (text_x, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         
-        # 显示结果
+        # Show the result
         cv2.imshow('Face Detection', display_img)
         
-        # 增加帧计数器
+        # Increment frame counter
         frame_counter += 1
         
-        # 检测按键
+        # Detect key press
         key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):  # 按'q'键退出
+        if key == ord('q'):  # Press 'q' to exit
             break
-        elif key == ord('s') and results.detections:  # 按's'键保存人脸
+        elif key == ord('s') and results.detections:  # Press 's' to save faces
             for i, detection in enumerate(results.detections):
-                # 获取边界框坐标
+                # Get bounding box coordinates
                 bboxC = detection.location_data.relative_bounding_box
                 ih, iw, ic = img.shape
                 bbox = int(bboxC.xmin * iw), int(bboxC.ymin * ih), \
                        int(bboxC.width * iw), int(bboxC.height * ih)
                 
-                # 从原始图像提取人脸区域
+                # Extract face region from the original image
                 x, y, w, h = bbox
-                # 添加一些边距
+                # Add some padding
                 padding = 20
                 x = max(0, x - padding)
                 y = max(0, y - padding)
                 w = min(w + 2*padding, iw - x)
                 h = min(h + 2*padding, ih - y)
-                face_img = img[y:y+h, x:x+w]  # 使用原始图像而不是display_img
+                face_img = img[y:y+h, x:x+w]  # Use original image instead of display_img
                 
-                # 生成带时间戳的文件名
+                # Generate a timestamped filename
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
                 filename = f'face_{timestamp}_{i}.jpg'
                 filepath = os.path.join(save_dir, filename)
                 
-                # 保存人脸图像
+                # Save the face image
                 cv2.imwrite(filepath, face_img)
                 print(f"Face saved to: {filepath}")
 
-# 释放资源
+# Release resources
 cap.release()
 cv2.destroyAllWindows()
