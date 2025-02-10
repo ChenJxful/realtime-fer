@@ -27,7 +27,7 @@ This project implements real-time face expression recognition, capable of identi
 
 3. Download the ONNX model file (not included in the repository due to size constraints) from Google Cloud Disk:
 
-   [🔗 Google Drive Link](https://drive.google.com/file/d/1tFC7Vx_hPzCWOPJi-tz0UCzskLifMp3j/view?usp=drive_link)
+   🔗 [Google Drive Link](https://drive.google.com/file/d/1tFC7Vx_hPzCWOPJi-tz0UCzskLifMp3j/view?usp=drive_link)
 
 4. Run the project:
    ```bash
